@@ -45,6 +45,25 @@ npm start
 xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" npm start -- --no-sandbox
 ```
 
+### 📦 下载可执行文件（Windows）
+
+已发布 Windows 便携版，无需安装，解压后双击 `玄凤桌面宠物.exe` 即可运行：
+
+> [玄凤桌面宠物 v1.0.0（Windows 便携版）](https://github.com/Glittleyu/cockatiel-pet/releases/download/v1.0.0/cockatiel-pet-1.0.0-win.zip)
+
+### 🛠️ 自行打包
+
+项目使用 electron-builder，已配置 NSIS 安装包与便携目录两种目标。
+
+```bash
+npm install
+npm run dist:win        # 生成 Windows NSIS 安装包（需在本机 Windows 或装有 wine 的环境）
+npm run dist:win:dir    # 仅生成未打包目录 dist/win-unpacked（跨平台可用）
+```
+
+> 注：在 Linux 上若未安装 wine，NSIS 安装包（`--win nsis`）无法生成签名与打包步骤；
+> 但 `--win --dir` / `--win zip` 可正常产出可直接运行的 Windows 可执行程序。
+
 ## 📖 操作说明
 
 | 操作 | 效果 |
