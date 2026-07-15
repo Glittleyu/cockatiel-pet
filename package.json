@@ -1,0 +1,17 @@
+{
+  "name": "cockatiel-pet",
+  "version": "1.0.0",
+  "description": "玄凤鹦鹉桌面宠物 - 类似经典 QQ 宠物的独立应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["electron", "desktop-pet", "cockatiel"],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^28.3.3"
+  }
+}

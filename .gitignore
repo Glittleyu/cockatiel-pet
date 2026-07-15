@@ -1,0 +1,25 @@
+# 依赖
+node_modules/
+
+# 打包产物
+dist/
+out/
+*.exe
+*.dmg
+*.AppImage
+*.snap
+*.deb
+
+# 临时文件
+core.*
+*.log
+preview.png
+test-screenshot.png
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>玄凤桌面宠物</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 宠物主体 -->
+    <div id="pet-container">
+      <div id="pet-wrapper">
+        <img id="pet-image" src="../assets/idle.png" alt="玄凤鹦鹉">
+        <!-- 翅膀补充动画层 -->
+        <canvas id="wing-canvas" width="320" height="320"></canvas>
+      </div>
+      <div id="head-zone"></div>
+      <div id="body-zone"></div>
+      <!-- 特效层 -->
+      <div id="effects"></div>
+      <!-- 对话气泡 -->
+      <div id="speech-bubble" class="hidden"></div>
+    </div>
+
+    <!-- 状态面板 -->
+    <div id="status-panel" class="hidden">
+      <h3>小玄的状态</h3>
+      <div class="stat-row">
+        <span class="stat-label">饱腹度</span>
+        <div class="stat-bar"><div id="bar-fullness" class="stat-fill"></div></div>
+        <span id="val-fullness" class="stat-value">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">口渴值</span>
+        <div class="stat-bar"><div id="bar-thirst" class="stat-fill"></div></div>
+        <span id="val-thirst" class="stat-value">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">开心度</span>
+        <div class="stat-bar"><div id="bar-happiness" class="stat-fill"></div></div>
+        <span id="val-happiness" class="stat-value">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">精力值</span>
+        <div class="stat-bar"><div id="bar-energy" class="stat-fill"></div></div>
+        <span id="val-energy" class="stat-value">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">好感度</span>
+        <div class="stat-bar"><div id="bar-affection" class="stat-fill"></div></div>
+        <span id="val-affection" class="stat-value">50</span>
+      </div>
+      <div class="close-btn" id="close-status">×</div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

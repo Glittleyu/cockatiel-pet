@@ -1,0 +1,296 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: transparent;
+}
+
+/* 宠物容器 */
+#pet-container {
+  width: 320px;
+  height: 320px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  -webkit-app-region: drag;
+  background: transparent;
+  cursor: grab;
+}
+
+#pet-container:active {
+  cursor: grabbing;
+}
+
+#pet-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#pet-image {
+  width: 260px;
+  height: 260px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  transition: transform 0.1s ease-out;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+#wing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 320px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* 特效层 */
+#effects {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.effect {
+  position: absolute;
+  pointer-events: none;
+  animation: floatUp 1.5s ease-out forwards;
+  font-size: 24px;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-80px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* 对话气泡 */
+#speech-bubble {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #5d4037;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s;
+  z-index: 100;
+}
+
+#speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent;
+}
+
+.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 状态面板 */
+#status-panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 200px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 200;
+  -webkit-app-region: no-drag;
+  cursor: default;
+  transition: opacity 0.3s;
+}
+
+#status-panel h3 {
+  font-size: 15px;
+  color: #5d4037;
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  width: 50px;
+  font-size: 12px;
+  color: #795548;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.stat-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease-out;
+}
+
+#bar-fullness { background: #ff9e80; }
+#bar-thirst { background: #81d4fa; }
+#bar-happiness { background: #fff59d; }
+#bar-energy { background: #a5d6a7; }
+#bar-affection { background: #f48fb1; }
+
+.stat-value {
+  width: 28px;
+  font-size: 12px;
+  color: #5d4037;
+  text-align: right;
+}
+
+.close-btn {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 18px;
+  color: #9e9e9e;
+  cursor: pointer;
+  line-height: 1;
+  -webkit-app-region: no-drag;
+}
+
+.close-btn:hover {
+  color: #5d4037;
+}
+
+/* 动画类（由 JS 动态添加） */
+.breathing {
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.03) translateY(-3px); }
+}
+
+.flapping {
+  animation: flap 0.4s ease-in-out infinite;
+}
+
+@keyframes flap {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50% { transform: scale(1.08) rotate(4deg) translateY(-8px); }
+}
+
+.preening {
+  animation: preen 1.2s ease-in-out infinite;
+}
+
+@keyframes preen {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg) scale(1.02); }
+  50% { transform: rotate(3deg) scale(1.02); }
+  75% { transform: rotate(-4deg) scale(1.02); }
+}
+
+.eating {
+  animation: eat 0.5s ease-in-out infinite;
+}
+
+@keyframes eat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(6px) rotate(3deg); }
+}
+
+.pampering {
+  animation: pamper 0.6s ease-in-out infinite;
+}
+
+@keyframes pamper {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-6deg); }
+  75% { transform: scale(1.1) rotate(6deg); }
+}
+
+.sleeping {
+  animation: sleep 3s ease-in-out infinite;
+}
+
+@keyframes sleep {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.02) translateY(-2px); }
+}
+
+/* 头部点击热区 */
+#head-zone {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 110px;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+#body-zone {
+  position: absolute;
+  top: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 130px;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
