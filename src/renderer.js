@@ -8,7 +8,6 @@ const ASSETS = {
 
 const STATES = {
   IDLE: 'idle',
-  FLAP: 'flap',
   PREEN: 'preen',
   EAT: 'eat',
   PAMPER: 'pamper',
@@ -17,7 +16,6 @@ const STATES = {
 
 const STATE_CONFIG = {
   [STATES.IDLE]: { img: 'idle', animClass: 'breathing', minDuration: 3000, maxDuration: 8000 },
-  [STATES.FLAP]: { img: 'idle', animClass: 'flapping', minDuration: 1500, maxDuration: 3000, showWings: true },
   [STATES.PREEN]: { img: 'idle', animClass: 'preening', minDuration: 2000, maxDuration: 4000 },
   [STATES.EAT]: { img: 'eat', animClass: 'eating', minDuration: 2000, maxDuration: 4000 },
   [STATES.PAMPER]: { img: 'idle', animClass: 'pampering', minDuration: 2000, maxDuration: 2500 },
@@ -39,15 +37,12 @@ class Pet {
     this.elements = {
       container: document.getElementById('pet-container'),
       image: document.getElementById('pet-image'),
-      wingCanvas: document.getElementById('wing-canvas'),
       effects: document.getElementById('effects'),
       bubble: document.getElementById('speech-bubble'),
       statusPanel: document.getElementById('status-panel'),
       headZone: document.getElementById('head-zone'),
       bodyZone: document.getElementById('body-zone'),
     };
-
-    this.wingCtx = this.elements.wingCanvas.getContext('2d');
 
     this.stats = {
       fullness: 80,
@@ -63,7 +58,6 @@ class Pet {
     this.statusVisible = false;
     this.isDragging = false;
     this.dragStart = { x: 0, y: 0 };
-    this.handEl = null;
     this.moveScheduled = false;
     this.pendingMove = null;
 
@@ -76,50 +70,6 @@ class Pet {
     this.startDecayLoop();
     this.updateStatusUI();
     this.showBubble('小玄来啦~', 2000);
-    this.animateWings();
-  }
-
-  // ===== 拖拽相关 =====
-  startGrabbing(e) {
-    // 暂停当前动画，切换到"被抓住"动画
-    this.elements.image.className = 'grabbed';
-    this.showHand(e);
-    this.showBubble('抓到我啦~', 1000);
-  }
-
-  stopGrabbing() {
-    // 恢复当前状态的动画
-    this.elements.image.className = '';
-    this.elements.image.classList.add(STATE_CONFIG[this.state].animClass);
-    this.hideHand();
-    this.showBubble('放我下来啦~', 1200);
-  }
-
-  showHand(e) {
-    if (this.handEl) return;
-    const hand = document.createElement('div');
-    hand.className = 'hand-grab';
-    // 用 OPEN HAND 表情表示抓住宠物
-    hand.textContent = '🤚';
-    this.elements.container.appendChild(hand);
-    this.handEl = hand;
-    if (e) this.updateHandPosition(e);
-  }
-
-  hideHand() {
-    if (this.handEl) {
-      this.handEl.remove();
-      this.handEl = null;
-    }
-  }
-
-  updateHandPosition(e) {
-    if (!this.handEl) return;
-    const rect = this.elements.container.getBoundingClientRect();
-    const x = e.clientX - rect.left - 23; // 约半手大小
-    const y = e.clientY - rect.top - 23;
-    this.handEl.style.left = `${x}px`;
-    this.handEl.style.top = `${y}px`;
   }
 
   // requestAnimationFrame 节流，减少 IPC 调用，避免拖动闪烁
@@ -151,7 +101,8 @@ class Pet {
       if (e.button === 0) {
         this.isDragging = true;
         this.dragStart = { x: e.clientX, y: e.clientY };
-        this.startGrabbing(e);
+        // 拖动时暂停呼吸动画，避免与窗口移动叠加造成闪烁
+        this.elements.image.style.animationPlayState = 'paused';
       }
     });
 
@@ -164,14 +115,13 @@ class Pet {
         this.pendingMove = { dx, dy };
         this.scheduleMove();
       }
-      // 手跟随鼠标
-      this.updateHandPosition(e);
     });
 
     window.addEventListener('mouseup', () => {
       if (this.isDragging) {
         this.isDragging = false;
-        this.stopGrabbing();
+        // 恢复呼吸动画
+        this.elements.image.style.animationPlayState = 'running';
       }
     });
 
@@ -299,9 +249,8 @@ class Pet {
 
       const rand = Math.random();
       let nextState = STATES.IDLE;
-      if (rand < 0.25) nextState = STATES.FLAP;
-      else if (rand < 0.5) nextState = STATES.PREEN;
-      else if (rand < 0.65) nextState = STATES.EAT; // 偶尔自己啄食
+      if (rand < 0.3) nextState = STATES.PREEN;
+      else if (rand < 0.5) nextState = STATES.EAT; // 偶尔自己啄食
       else nextState = STATES.IDLE;
 
       this.setState(nextState);
@@ -436,56 +385,6 @@ class Pet {
         setTimeout(() => el.remove(), 1600);
       }, i * 150);
     }
-  }
-
-  animateWings() {
-    // 当状态为 flap 时，在 canvas 上绘制扇动的翅膀
-    const draw = () => {
-      const ctx = this.wingCtx;
-      const canvas = this.elements.wingCanvas;
-      const width = canvas.width;
-      const height = canvas.height;
-
-      ctx.clearRect(0, 0, width, height);
-
-      if (this.state !== STATES.FLAP) {
-        requestAnimationFrame(draw);
-        return;
-      }
-
-      const time = Date.now() / 100;
-      const flapAngle = Math.sin(time) * 0.5; // 扇动角度
-
-      ctx.save();
-      ctx.translate(width / 2, height / 2);
-
-      // 绘制左侧翅膀（简化的扇形）
-      ctx.save();
-      ctx.rotate(-0.3 + flapAngle * 0.5);
-      ctx.fillStyle = 'rgba(255, 250, 220, 0.85)';
-      ctx.strokeStyle = 'rgba(139, 90, 0, 0.7)';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(-80, 10, 50, 70, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-
-      // 绘制右侧翅膀
-      ctx.save();
-      ctx.rotate(0.3 - flapAngle * 0.5);
-      ctx.beginPath();
-      ctx.ellipse(80, 10, 50, 70, -0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-
-      ctx.restore();
-
-      requestAnimationFrame(draw);
-    };
-
-    draw();
   }
 
   randomRange(min, max) {

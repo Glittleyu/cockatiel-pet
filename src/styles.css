@@ -53,17 +53,6 @@ html, body {
   cursor: pointer;
 }
 
-#wing-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 320px;
-  height: 320px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
 /* 特效层 */
 #effects {
   position: absolute;
@@ -220,15 +209,6 @@ html, body {
   50% { transform: scale(1.03) translateY(-3px); }
 }
 
-.flapping {
-  animation: flap 0.4s ease-in-out infinite;
-}
-
-@keyframes flap {
-  0%, 100% { transform: scale(1) rotate(-2deg); }
-  50% { transform: scale(1.08) rotate(4deg) translateY(-8px); }
-}
-
 .preening {
   animation: preen 1.2s ease-in-out infinite;
 }
@@ -266,34 +246,6 @@ html, body {
 @keyframes sleep {
   0%, 100% { transform: scale(1) translateY(0); }
   50% { transform: scale(1.02) translateY(-2px); }
-}
-
-/* 被手抓住时的动画 */
-.grabbed {
-  animation: grabbed 0.4s ease-in-out infinite;
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.25));
-}
-
-@keyframes grabbed {
-  0%, 100% { transform: scale(0.92) translateY(0) rotate(-2deg); }
-  50% { transform: scale(0.86) translateY(-4px) rotate(2deg); }
-}
-
-/* 拖拽时的手 */
-.hand-grab {
-  position: absolute;
-  font-size: 46px;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 50;
-  transform-origin: center;
-  animation: handWiggle 0.45s ease-in-out infinite;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-}
-
-@keyframes handWiggle {
-  0%, 100% { transform: rotate(-10deg) scale(1); }
-  50% { transform: rotate(10deg) scale(1.05); }
 }
 
 /* 头部点击热区 */
