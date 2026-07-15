@@ -37,38 +37,37 @@ function createWindow() {
   if (process.env.COCKATIEL_SCREENSHOT) {
     mainWindow.webContents.on('did-finish-load', () => {
       setTimeout(() => {
-        // 1. 进入睡眠状态
-        mainWindow.webContents.send('action', 'sleep');
-        setTimeout(() => {
-          // 2. 打开状态面板
-          mainWindow.webContents.send('action', 'status');
+        // 模拟拖拽：进入"被抓住"状态
+        mainWindow.webContents.executeJavaScript(`
+          if (window.pet) {
+            window.pet.isDragging = true;
+            window.pet.startGrabbing({ clientX: 160, clientY: 160 });
+            window.pet.updateHandPosition({ clientX: 160, clientY: 200 });
+          }
+        `).then(() => {
           setTimeout(() => {
             mainWindow.capturePage().then((image) => {
               const fs = require('fs');
               fs.writeFileSync(
-                path.join(__dirname, 'test-sleep.png'),
+                path.join(__dirname, 'test-drag.png'),
                 image.toPNG()
               );
-              console.log('Saved test-sleep.png');
-
-              // 3. 唤醒后继续截图
-              mainWindow.webContents.send('action', 'wake');
-              setTimeout(() => {
-                mainWindow.capturePage().then((image2) => {
-                  fs.writeFileSync(
-                    path.join(__dirname, 'test-wakeup.png'),
-                    image2.toPNG()
-                  );
-                  console.log('Saved test-wakeup.png');
-                  setTimeout(() => app.quit(), 300);
-                });
-              }, 800);
+              console.log('Saved test-drag.png');
+              // 停止拖拽
+              mainWindow.webContents.executeJavaScript(`
+                if (window.pet) {
+                  window.pet.isDragging = false;
+                  window.pet.stopGrabbing();
+                }
+              `).then(() => {
+                setTimeout(() => app.quit(), 300);
+              });
             }).catch((err) => {
               console.error('Screenshot failed:', err);
               app.quit();
             });
-          }, 800);
-        }, 1200);
+          }, 700);
+        });
       }, 1500);
     });
   }

@@ -63,6 +63,9 @@ class Pet {
     this.statusVisible = false;
     this.isDragging = false;
     this.dragStart = { x: 0, y: 0 };
+    this.handEl = null;
+    this.moveScheduled = false;
+    this.pendingMove = null;
 
     this.init();
   }
@@ -74,6 +77,62 @@ class Pet {
     this.updateStatusUI();
     this.showBubble('小玄来啦~', 2000);
     this.animateWings();
+  }
+
+  // ===== 拖拽相关 =====
+  startGrabbing(e) {
+    // 暂停当前动画，切换到"被抓住"动画
+    this.elements.image.className = 'grabbed';
+    this.showHand(e);
+    this.showBubble('抓到我啦~', 1000);
+  }
+
+  stopGrabbing() {
+    // 恢复当前状态的动画
+    this.elements.image.className = '';
+    this.elements.image.classList.add(STATE_CONFIG[this.state].animClass);
+    this.hideHand();
+    this.showBubble('放我下来啦~', 1200);
+  }
+
+  showHand(e) {
+    if (this.handEl) return;
+    const hand = document.createElement('div');
+    hand.className = 'hand-grab';
+    // 用 OPEN HAND 表情表示抓住宠物
+    hand.textContent = '🤚';
+    this.elements.container.appendChild(hand);
+    this.handEl = hand;
+    if (e) this.updateHandPosition(e);
+  }
+
+  hideHand() {
+    if (this.handEl) {
+      this.handEl.remove();
+      this.handEl = null;
+    }
+  }
+
+  updateHandPosition(e) {
+    if (!this.handEl) return;
+    const rect = this.elements.container.getBoundingClientRect();
+    const x = e.clientX - rect.left - 23; // 约半手大小
+    const y = e.clientY - rect.top - 23;
+    this.handEl.style.left = `${x}px`;
+    this.handEl.style.top = `${y}px`;
+  }
+
+  // requestAnimationFrame 节流，减少 IPC 调用，避免拖动闪烁
+  scheduleMove() {
+    if (this.moveScheduled) return;
+    this.moveScheduled = true;
+    requestAnimationFrame(() => {
+      this.moveScheduled = false;
+      if (this.pendingMove && window.electronAPI) {
+        window.electronAPI.moveWindow(this.pendingMove.dx, this.pendingMove.dy);
+        this.pendingMove = null;
+      }
+    });
   }
 
   bindEvents() {
@@ -92,6 +151,7 @@ class Pet {
       if (e.button === 0) {
         this.isDragging = true;
         this.dragStart = { x: e.clientX, y: e.clientY };
+        this.startGrabbing(e);
       }
     });
 
@@ -99,14 +159,20 @@ class Pet {
       if (!this.isDragging) return;
       const dx = e.clientX - this.dragStart.x;
       const dy = e.clientY - this.dragStart.y;
-      if (window.electronAPI && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
-        window.electronAPI.moveWindow(dx, dy);
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
         this.dragStart = { x: e.clientX, y: e.clientY };
+        this.pendingMove = { dx, dy };
+        this.scheduleMove();
       }
+      // 手跟随鼠标
+      this.updateHandPosition(e);
     });
 
     window.addEventListener('mouseup', () => {
-      this.isDragging = false;
+      if (this.isDragging) {
+        this.isDragging = false;
+        this.stopGrabbing();
+      }
     });
 
     // 头部点击 - 抚摸
