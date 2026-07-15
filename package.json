@@ -5,13 +5,45 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:win:dir": "electron-builder --win --dir",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["electron", "desktop-pet", "cockatiel"],
-  "author": "",
+  "keywords": [
+    "electron",
+    "desktop-pet",
+    "cockatiel"
+  ],
+  "author": "Glittleyu",
   "license": "MIT",
   "type": "commonjs",
+  "build": {
+    "appId": "com.cockatiel.pet",
+    "productName": "玄凤桌面宠物",
+    "copyright": "Copyright © 2025 Cockatiel Pet",
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,.git}",
+      "!scripts/",
+      "!assets/raw/",
+      "!preview.png"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/idle.png",
+      "artifactName": "玄凤桌面宠物-${version}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "玄凤桌面宠物"
+    }
+  },
   "devDependencies": {
-    "electron": "^28.3.3"
+    "electron": "^28.3.3",
+    "electron-builder": "^26.15.3"
   }
 }
