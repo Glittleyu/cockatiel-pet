@@ -1,45 +1,74 @@
-from PIL import Image
+from PIL import Image, ImageFilter
+import cv2
+import numpy as np
 import os
-import sys
 
 
-def remove_solid_background(input_path, output_path, threshold=30):
-    """去除图片的纯色背景，保留主体。
-    通过四个角采样背景色，再用颜色距离阈值将背景设为透明。
+def remove_solid_background(input_path, output_path, lo_diff=30, up_diff=30):
+    """去除图片的纯色背景，保留主体细节（如鼻子/喙部/腮红内部）。
+
+    算法：
+    1. 使用 OpenCV floodFill 从四个角填充背景，只填充与角落相连的区域
+    2. 主体内部的浅色区域（如脸颊腮红）不会被填充，因为它不与背景连通
+    3. 使用形态学 MinFilter 去除主体边缘残留的背景噪点
+    4. 边缘像素做 alpha 渐变，使过渡更平滑
     """
+    # 读取原图，保留 alpha
     img = Image.open(input_path).convert("RGBA")
     width, height = img.size
-    pixels = img.load()
+    img_array = np.array(img)
+    bgr = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
+    alpha = img_array[:, :, 3].astype(np.float32)
 
-    # 采样四个角的背景色
-    corners = [
-        pixels[0, 0],
-        pixels[width - 1, 0],
-        pixels[0, height - 1],
-        pixels[width - 1, height - 1],
-    ]
+    # 初始化 mask（比原图大 2 像素）
+    mask = np.zeros((height + 2, width + 2), np.uint8)
 
-    # 取平均背景色
-    bg_r = sum(c[0] for c in corners) // 4
-    bg_g = sum(c[1] for c in corners) // 4
-    bg_b = sum(c[2] for c in corners) // 4
+    corners = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)]
+    for x, y in corners:
+        cv2.floodFill(
+            bgr,
+            mask,
+            seedPoint=(x, y),
+            newVal=(0, 0, 0),
+            loDiff=(lo_diff, lo_diff, lo_diff),
+            upDiff=(up_diff, up_diff, up_diff),
+            flags=4 | cv2.FLOODFILL_FIXED_RANGE | cv2.FLOODFILL_MASK_ONLY,
+        )
 
-    for y in range(height):
-        for x in range(width):
-            r, g, b, a = pixels[x, y]
-            # 计算与背景色的欧氏距离
-            dist = ((r - bg_r) ** 2 + (g - bg_g) ** 2 + (b - bg_b) ** 2) ** 0.5
-            if dist < threshold:
-                # 背景色设为完全透明
-                pixels[x, y] = (r, g, b, 0)
-            else:
-                # 保留原透明度（处理边缘半透明）
-                # 对于边缘像素，根据距离降低透明度，实现平滑过渡
-                if dist < threshold + 20:
-                    alpha = int((1 - (dist - threshold) / 20) * 255)
-                    pixels[x, y] = (r, g, b, alpha)
+    # mask 中填充过的背景区域为 255（去掉外圈的 padding）
+    bg_mask = mask[1:-1, 1:-1] > 0
 
-    img.save(output_path)
+    # 形态学：对前景做 closing（先膨胀后腐蚀），填补主体内部被 floodFill 误入的小洞
+    fg_mask = ~bg_mask
+    fg_img = Image.fromarray((fg_mask * 255).astype(np.uint8))
+    fg_img = fg_img.filter(ImageFilter.MaxFilter(3))  # 膨胀前景
+    fg_img = fg_img.filter(ImageFilter.MinFilter(3))  # 腐蚀前景
+    bg_mask = np.array(fg_img) < 128
+
+    # 再轻微腐蚀背景，去除主体边缘附着的少量背景噪点
+    mask_img = Image.fromarray((bg_mask * 255).astype(np.uint8))
+    mask_img = mask_img.filter(ImageFilter.MinFilter(3))
+    bg_mask = np.array(mask_img) > 128
+
+    # 背景透明
+    new_alpha = alpha.copy()
+    new_alpha[bg_mask] = 0
+
+    # 计算到背景色的距离，用于边缘渐变
+    corners = [img.getpixel((0, 0)), img.getpixel((width - 1, 0)),
+               img.getpixel((0, height - 1)), img.getpixel((width - 1, height - 1))]
+    bg_color = tuple(int(sum(c[i] for c in corners) / 4) for i in range(3))
+    rgb = img_array[:, :, :3].astype(np.float32)
+    diff = np.sqrt(np.sum((rgb - bg_color) ** 2, axis=2))
+
+    # 边缘渐变：lo_diff ~ lo_diff+25 之间的像素做 alpha 过渡
+    edge_mask = (~bg_mask) & (diff >= lo_diff) & (diff < lo_diff + 25)
+    factor = (diff[edge_mask] - lo_diff) / 25
+    new_alpha[edge_mask] = (new_alpha[edge_mask] * factor).astype(np.float32)
+
+    img_array[:, :, 3] = new_alpha.astype(np.uint8)
+    result = Image.fromarray(img_array)
+    result.save(output_path)
     print(f"Saved: {output_path}")
 
 

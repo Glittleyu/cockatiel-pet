@@ -37,23 +37,38 @@ function createWindow() {
   if (process.env.COCKATIEL_SCREENSHOT) {
     mainWindow.webContents.on('did-finish-load', () => {
       setTimeout(() => {
-        // 触发状态面板展示
-        mainWindow.webContents.send('action', 'status');
+        // 1. 进入睡眠状态
+        mainWindow.webContents.send('action', 'sleep');
         setTimeout(() => {
-          mainWindow.capturePage().then((image) => {
-            const fs = require('fs');
-            fs.writeFileSync(
-              path.join(__dirname, 'test-screenshot.png'),
-              image.toPNG()
-            );
-            console.log('Screenshot saved to test-screenshot.png');
-            // 截图后自动退出，方便 CI 测试
-            setTimeout(() => app.quit(), 500);
-          }).catch((err) => {
-            console.error('Screenshot failed:', err);
-            app.quit();
-          });
-        }, 800);
+          // 2. 打开状态面板
+          mainWindow.webContents.send('action', 'status');
+          setTimeout(() => {
+            mainWindow.capturePage().then((image) => {
+              const fs = require('fs');
+              fs.writeFileSync(
+                path.join(__dirname, 'test-sleep.png'),
+                image.toPNG()
+              );
+              console.log('Saved test-sleep.png');
+
+              // 3. 唤醒后继续截图
+              mainWindow.webContents.send('action', 'wake');
+              setTimeout(() => {
+                mainWindow.capturePage().then((image2) => {
+                  fs.writeFileSync(
+                    path.join(__dirname, 'test-wakeup.png'),
+                    image2.toPNG()
+                  );
+                  console.log('Saved test-wakeup.png');
+                  setTimeout(() => app.quit(), 300);
+                });
+              }, 800);
+            }).catch((err) => {
+              console.error('Screenshot failed:', err);
+              app.quit();
+            });
+          }, 800);
+        }, 1200);
       }, 1500);
     });
   }
@@ -129,26 +144,46 @@ app.on('window-all-closed', () => {
 });
 
 // IPC 通信：右键菜单触发
+let currentSleeping = false;
+
+ipcMain.on('state-changed', (event, sleeping) => {
+  currentSleeping = sleeping;
+});
+
 ipcMain.on('context-menu', (event) => {
-  const template = [
-    {
-      label: '🍚 喂食',
+  const template = [];
+
+  if (currentSleeping) {
+    template.push({
+      label: '☀️ 唤醒',
       click: () => {
-        mainWindow.webContents.send('action', 'feed');
+        mainWindow.webContents.send('action', 'wake');
       },
-    },
-    {
-      label: '💧 喂水',
-      click: () => {
-        mainWindow.webContents.send('action', 'water');
+    });
+  } else {
+    template.push(
+      {
+        label: '🍚 喂食',
+        click: () => {
+          mainWindow.webContents.send('action', 'feed');
+        },
       },
-    },
-    {
-      label: '🏠 去休息',
-      click: () => {
-        mainWindow.webContents.send('action', 'sleep');
+      {
+        label: '💧 喂水',
+        click: () => {
+          mainWindow.webContents.send('action', 'water');
+        },
       },
-    },
+      {
+        label: '🏠 去休息',
+        click: () => {
+          mainWindow.webContents.send('action', 'sleep');
+        },
+      }
+    );
+  }
+
+  template.push(
     {
       label: '📊 查看状态',
       click: () => {
@@ -161,8 +196,8 @@ ipcMain.on('context-menu', (event) => {
       click: () => {
         app.quit();
       },
-    },
-  ];
+    }
+  );
 
   const menu = Menu.buildFromTemplate(template);
   menu.popup();

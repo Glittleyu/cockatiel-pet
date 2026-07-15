@@ -113,6 +113,10 @@ class Pet {
     headZone.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this.isDragging) return;
+      if (this.state === STATES.SLEEP) {
+        this.wakeUp();
+        return;
+      }
       this.pamper();
     });
 
@@ -120,6 +124,10 @@ class Pet {
     bodyZone.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this.isDragging) return;
+      if (this.state === STATES.SLEEP) {
+        this.wakeUp();
+        return;
+      }
       this.showBubble('啾~', 1200);
       this.addStat('happiness', 2);
       this.addStat('affection', 1);
@@ -128,6 +136,10 @@ class Pet {
     // 双击
     image.addEventListener('dblclick', (e) => {
       e.stopPropagation();
+      if (this.state === STATES.SLEEP) {
+        this.wakeUp();
+        return;
+      }
       this.showBubble('双倍开心！❤️', 1500);
       this.addStat('happiness', 10);
       this.addStat('affection', 3);
@@ -146,6 +158,14 @@ class Pet {
   }
 
   handleAction(action) {
+    // 睡觉时：非查看/非睡眠操作先唤醒，再执行原动作
+    if (this.state === STATES.SLEEP && action !== 'sleep' && action !== 'status') {
+      this.wakeUp();
+      if (action === 'wake') {
+        return;
+      }
+    }
+
     switch (action) {
       case 'feed':
         this.feed('food');
@@ -195,6 +215,11 @@ class Pet {
     // 如果进入睡眠，停止自动行为
     if (newState === STATES.SLEEP) {
       this.spawnEffect('💤', 1, { x: 220, y: 60 });
+    }
+
+    // 同步主进程，更新右键菜单
+    if (window.electronAPI && window.electronAPI.sendStateChanged) {
+      window.electronAPI.sendStateChanged(newState === STATES.SLEEP);
     }
   }
 
@@ -252,11 +277,6 @@ class Pet {
   }
 
   feed(type) {
-    if (this.state === STATES.SLEEP) {
-      this.showBubble(' sleeping...', 1500);
-      return;
-    }
-
     if (type === 'food') {
       this.addStat('fullness', 25);
       this.addStat('happiness', 5);
@@ -275,10 +295,6 @@ class Pet {
   }
 
   pamper() {
-    if (this.state === STATES.SLEEP) {
-      this.showBubble('唔...在睡觉呢', 1500);
-      return;
-    }
     this.addStat('happiness', 8);
     this.addStat('affection', 5);
     this.showBubble(this.randomPick(BUBBLES.pamper), 2000);
@@ -289,6 +305,14 @@ class Pet {
   forceSleep() {
     this.setState(STATES.SLEEP);
     this.showBubble(this.randomPick(BUBBLES.sleep), 2000);
+  }
+
+  wakeUp() {
+    if (this.state !== STATES.SLEEP) return;
+    this.showBubble('起床啦~', 1500);
+    this.spawnEffect('☀️', 3);
+    this.addStat('energy', 5);
+    this.setState(STATES.IDLE);
   }
 
   addStat(key, value, isDecay = false) {
